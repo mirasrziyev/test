@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Marcus">
+  <title>Marcus</title>
+
+  <!-- Generate app icon via canvas -->
+  <script>
+    function makeIcon() {
+      const c = document.createElement('canvas');
+      c.width = 180; c.height = 180;
+      const ctx = c.getContext('2d');
+      // rounded rect background
+      const r = 40;
+      ctx.beginPath();
+      ctx.moveTo(r,0); ctx.lineTo(180-r,0); ctx.quadraticCurveTo(180,0,180,r);
+      ctx.lineTo(180,180-r); ctx.quadraticCurveTo(180,180,180-r,180);
+      ctx.lineTo(r,180); ctx.quadraticCurveTo(0,180,0,180-r);
+      ctx.lineTo(0,r); ctx.quadraticCurveTo(0,0,r,0); ctx.closePath();
+      ctx.fillStyle = '#1a2744'; ctx.fill();
+      // M
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 80px -apple-system, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('M', 22, 88);
+      // colon dots
+      ctx.fillStyle = '#7a9fd4';
+      ctx.beginPath(); ctx.arc(140, 68, 9, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(140, 108, 9, 0, Math.PI*2); ctx.fill();
+      const url = c.toDataURL('image/png');
+      // set as apple touch icon
+      let link = document.querySelector("link[rel='apple-touch-icon']");
+      if (!link) { link = document.createElement('link'); link.rel = 'apple-touch-icon'; document.head.appendChild(link); }
+      link.href = url;
+      // also set favicon
+      let fav = document.querySelector("link[rel='icon']");
+      if (!fav) { fav = document.createElement('link'); fav.rel = 'icon'; document.head.appendChild(fav); }
+      fav.href = url;
+    }
+    window.addEventListener('DOMContentLoaded', makeIcon);
+  </script>
+
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;}
+    :root{--green:#2d7d6b;--navy:#1a2744;--blue:#3467a1;--bg:#eaecf2;--muted:#6b7280;--text:#1a1a2e;--border:#e2e4ea;--white:#fff;}
+    html,body{height:100%;background:var(--bg);font-family:'DM Sans',-apple-system,sans-serif;overflow:hidden;}
+    .app{display:flex;flex-direction:column;height:100%;height:100dvh;}
+    .screen{display:none;flex:1;flex-direction:column;min-height:0;}
+    .screen.on{display:flex;}
+    .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+    .scroll::-webkit-scrollbar{display:none;}
+
+    /* TAB BAR */
+    .tabbar{display:flex;background:var(--bg);border-top:1px solid var(--border);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom);}
+    .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 0 4px;cursor:pointer;}
+    .tab-lbl{font-size:10.5px;color:var(--muted);}
+    .tab.active .tab-lbl{color:var(--green);}
+
+    /* FDIC */
+    .fdic{background:#d9dce6;padding:13px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
+    .fdic-logo{font-size:11px;font-weight:800;color:#003087;border:2px solid #003087;padding:2px 5px;border-radius:3px;white-space:nowrap;letter-spacing:.5px;}
+    .fdic-txt{font-size:10.5px;color:#444;line-height:1.45;font-style:italic;}
+
+    /* ACCOUNTS */
+    .acct-header{padding:14px 22px 4px;position:relative;overflow:hidden;min-height:128px;}
+    .logo{font-size:24px;font-weight:700;color:var(--navy);}
+    .welcome{font-size:26px;font-weight:300;color:var(--text);margin-top:12px;letter-spacing:-.4px;}
+    .header-art{position:absolute;right:0;top:0;width:140px;height:128px;pointer-events:none;}
+    .section{padding:18px 20px 0;}
+    .section-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+    .section-title{font-size:20px;font-weight:500;color:var(--text);}
+    .plus-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--text);display:flex;align-items:center;justify-content:center;}
+    .bal-card{background:var(--white);border-radius:12px;padding:17px 18px;box-shadow:0 1px 4px rgba(0,0,0,.07);cursor:pointer;}
+    .bal-acct-name{font-size:13px;color:var(--muted);margin-bottom:5px;}
+    .bal-amount{font-size:30px;font-weight:400;color:var(--green);letter-spacing:-1px;}
+    .bal-lbl{font-size:12px;color:var(--muted);margin-top:3px;}
+    .disc{padding:20px 20px 0;}
+    .disc-title{font-size:20px;font-weight:500;color:var(--text);margin-bottom:13px;}
+    .cards-row{display:flex;gap:11px;overflow-x:auto;margin:0 -20px;padding:0 20px 4px;scrollbar-width:none;}
+    .cards-row::-webkit-scrollbar{display:none;}
+    .pc{flex-shrink:0;width:158px;height:188px;border-radius:10px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;}
+    .pc-eye{font-size:11px;color:rgba(255,255,255,.75);line-height:1.4;}
+    .pc-head{font-size:19px;font-weight:400;color:#fff;line-height:1.2;letter-spacing:-.3px;flex:1;display:flex;align-items:flex-end;padding-bottom:10px;}
+    .pc-arr{font-size:16px;color:#fff;}
+    .legal{padding:20px 20px 28px;font-size:10.5px;color:var(--muted);line-height:1.6;}
+    .legal p{margin-bottom:9px;}
+
+    /* SAVINGS DETAIL */
+    .det-topbar{background:var(--navy);display:flex;align-items:center;justify-content:space-between;padding:13px 16px;flex-shrink:0;padding-top:calc(13px + env(safe-area-inset-top));}
+    .det-back{font-size:26px;color:#fff;cursor:pointer;width:44px;line-height:1;}
+    .det-title-txt{font-size:17px;font-weight:500;color:#fff;}
+    .det-card{background:var(--white);padding:18px 20px 14px;}
+    .det-dots{text-align:right;font-size:17px;color:var(--muted);letter-spacing:2px;}
+    .det-acct{font-size:14px;font-weight:500;color:var(--text);text-align:center;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:7px;}
+    .det-bal{font-size:36px;font-weight:400;color:var(--green);letter-spacing:-1.5px;text-align:center;margin:7px 0 3px;cursor:pointer;}
+    .det-bal-lbl{font-size:12px;color:var(--muted);text-align:center;margin-bottom:16px;}
+    .det-edit{display:none;align-items:center;justify-content:center;gap:4px;margin:7px 0 3px;}
+    .det-edit.on{display:flex;}
+    .det-bal.hide{display:none;}
+    .det-input{font-size:32px;font-weight:400;color:var(--green);border:none;border-bottom:2px solid var(--green);background:transparent;outline:none;width:175px;font-family:'DM Sans',sans-serif;text-align:center;padding-bottom:2px;}
+    .det-done{font-size:13px;font-weight:600;color:var(--green);cursor:pointer;background:none;border:none;padding:4px;font-family:'DM Sans',sans-serif;}
+    .det-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid #f0f0f0;font-size:13.5px;}
+    .det-rl{color:var(--muted);display:flex;align-items:center;gap:5px;}
+    .det-rv{color:var(--text);}
+    .det-rv.link{color:var(--blue);text-decoration:underline;}
+    .info-i{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--blue);display:inline-flex;align-items:center;justify-content:center;font-size:8px;color:var(--blue);font-weight:700;flex-shrink:0;}
+    .see-more{display:flex;align-items:center;justify-content:center;margin:13px auto 2px;background:#f0f2f7;border:none;border-radius:20px;padding:6px 17px;font-size:13px;color:var(--text);cursor:pointer;font-family:'DM Sans',sans-serif;}
+    .txn-title{font-size:20px;font-weight:500;color:var(--text);padding:16px 20px 6px;}
+    .txn-date{background:#e4e6ee;padding:6px 20px;font-size:12px;color:var(--muted);}
+    .txn-row{background:var(--white);padding:13px 20px;display:flex;align-items:flex-start;gap:12px;border-bottom:1px solid #f0f2f7;}
+    .txn-m{font-size:12px;font-weight:700;color:var(--navy);letter-spacing:-.5px;padding-top:1px;width:26px;flex-shrink:0;}
+    .txn-icon{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .txn-desc{flex:1;font-size:13px;color:var(--text);line-height:1.4;}
+    .txn-right{text-align:right;flex-shrink:0;}
+    .txn-pos{font-size:13px;font-weight:500;color:var(--green);}
+    .txn-neg{font-size:13px;font-weight:500;color:var(--text);}
+    .txn-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+    .track-btn{border:1.5px solid var(--navy);border-radius:6px;padding:5px 12px;font-size:12px;color:var(--navy);background:var(--white);cursor:pointer;align-self:center;font-family:'DM Sans',sans-serif;flex-shrink:0;}
+    .xfr-wrap{padding:13px 20px calc(13px + env(safe-area-inset-bottom));background:#f0f2f7;flex-shrink:0;}
+    .xfr-btn{width:100%;background:var(--blue);color:#fff;border:none;border-radius:10px;padding:16px;font-size:15px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+
+    /* TRANSFER / HELP */
+    .tab-header{padding:14px 22px 8px;min-height:115px;display:flex;align-items:flex-end;}
+    .tab-h-title{font-size:26px;font-weight:300;color:var(--text);letter-spacing:-.4px;line-height:1.3;}
+    .menu-list{background:var(--white);}
+    .menu-item{display:flex;align-items:center;gap:15px;padding:16px 20px;border-bottom:1px solid var(--border);}
+    .menu-item:last-child{border-bottom:none;}
+    .menu-icon-wrap{width:26px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .menu-label{font-size:14.5px;color:var(--text);}
+    .menu-sub{font-size:11.5px;color:var(--muted);margin-top:2px;}
+    .chev{flex-shrink:0;margin-left:auto;}
+    .section-lbl{font-size:15.5px;font-weight:500;color:var(--text);padding:14px 20px 7px;}
+    .card-list{background:var(--white);}
+    .card-item{display:flex;align-items:center;padding:15px 20px;border-bottom:1px solid var(--border);}
+    .card-item:last-child{border-bottom:none;}
+    .card-item-lbl{flex:1;font-size:14.5px;color:var(--text);}
+    .faq-btn-wrap{padding:14px 20px;}
+    .faq-btn{width:100%;background:var(--blue);color:#fff;border:none;border-radius:10px;padding:16px;font-size:15px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;}
+    .dot-online{width:9px;height:9px;border-radius:50%;background:var(--green);margin-right:13px;flex-shrink:0;}
+
+    /* PROFILE */
+    .prof-topbar{display:flex;justify-content:flex-end;padding:12px 20px 8px;}
+    .logout-btn{display:flex;align-items:center;gap:7px;font-size:14.5px;color:var(--text);cursor:pointer;}
+    .prof-card{background:var(--white);padding:24px 20px 20px;text-align:center;}
+    .prof-name{font-size:21px;font-weight:400;color:var(--text);}
+    .prof-email{font-size:13px;color:var(--muted);margin-top:3px;}
+    .contact-btn{margin:18px auto 0;display:block;width:100%;border:1.5px solid var(--blue);border-radius:8px;padding:13px;font-size:14.5px;color:var(--blue);background:var(--white);cursor:pointer;font-family:'DM Sans',sans-serif;}
+    .refer-banner{background:var(--navy);padding:18px 20px;display:flex;align-items:center;justify-content:space-between;}
+    .refer-eye{font-size:10px;color:rgba(255,255,255,.7);margin-bottom:3px;}
+    .refer-head{font-size:14.5px;font-weight:500;color:#fff;line-height:1.3;}
+    .footer{padding:20px;text-align:center;}
+    .footer-txt{font-size:12.5px;color:var(--muted);}
+    .app-ver{font-size:10.5px;color:var(--muted);margin-top:7px;}
+  </style>
+</head>
+<body>
+<div class="app">
+
+<!-- SVG shortcuts -->
+<svg style="display:none">
+  <symbol id="ic-chev" viewBox="0 0 8 14" fill="none" stroke-width="1.5" stroke-linecap="round"><path d="M1 1l6 6-6 6"/></symbol>
+  <symbol id="ic-home" viewBox="0 0 23 23" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10L11.5 3L20 10V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10z"/></symbol>
+  <symbol id="ic-home-filled" viewBox="0 0 23 23" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10L11.5 3L20 10V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10z"/><rect x="8.5" y="14" width="6" height="7" rx=".5" fill="var(--green)" stroke="none"/></symbol>
+  <symbol id="ic-swap" viewBox="0 0 23 23" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h17M3 15h17"/><path d="M7 5L4 8l3 3"/><path d="M16 12l3 3-3 3"/></symbol>
+  <symbol id="ic-help" viewBox="0 0 23 23" fill="none" stroke-width="1.5"><circle cx="11.5" cy="11.5" r="8.5"/><path d="M11.5 10.5v5" stroke-linecap="round"/><circle cx="11.5" cy="8" r=".8" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="ic-person" viewBox="0 0 23 23" fill="none" stroke-width="1.5"><circle cx="11.5" cy="8.5" r="3.5"/><path d="M4 20c0-4 3.4-7 7.5-7s7.5 3 7.5 7" stroke-linecap="round"/></symbol>
+</svg>
+
+<!-- ══ ACCOUNTS ══ -->
+<div class="screen on" id="s-accounts">
+  <div class="scroll">
+    <div class="acct-header">
+      <div class="logo">M:</div>
+      <div class="welcome">Welcome, Miras</div>
+      <div class="header-art">
+        <svg width="140" height="128" viewBox="0 0 140 128" fill="none">
+          <polygon points="115,8 140,90 90,90" fill="#2d9e87" opacity=".5"/>
+          <polygon points="80,16 118,105 42,105" fill="#2d7d6b"/>
+          <polygon points="80,16 118,65 42,65" fill="#35907b" opacity=".8"/>
+          <polygon points="22,50 65,110 -8,110" fill="#1f6b5a" opacity=".85"/>
+          <ellipse cx="38" cy="70" rx="16" ry="7" fill="#2455a0" opacity=".7" transform="rotate(-30 38 70)"/>
+          <line x1="38" y1="70" x2="38" y2="105" stroke="#1a3a6e" stroke-width="1.5" opacity=".7"/>
+          <path d="M85 26 Q90 21 95 26 Q90 23 85 26Z" fill="#6b8fa0" opacity=".85"/>
+        </svg>
+      </div>
+    </div>
+    <div class="fdic"><div class="fdic-logo">FDIC</div><div class="fdic-txt">FDIC-Insured – Backed by the full faith and credit of the U.S. Government. Goldman Sachs Bank USA, Salt Lake City Branch.</div></div>
+    <div class="section">
+      <div class="section-hdr">
+        <div class="section-title">Accounts</div>
+        <div class="plus-btn"><svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#1a1a2e" stroke-width="1.5" stroke-linecap="round"><line x1="6.5" y1="1" x2="6.5" y2="12"/><line x1="1" y1="6.5" x2="12" y2="6.5"/></svg></div>
+      </div>
+      <div class="bal-card" onclick="openSavings()">
+        <div class="bal-acct-name">Online Savings – 0090</div>
+        <div class="bal-amount" id="homeAmt">$120,507.32</div>
+        <div class="bal-lbl">Current balance</div>
+      </div>
+    </div>
+    <div class="disc">
+      <div class="disc-title">Discover more</div>
+      <div class="cards-row">
+        <div class="pc" style="background:#2d7d6b"><div class="pc-eye">Open a No-Penalty CD</div><div class="pc-head">Fixed rate &amp; flexible access</div><div class="pc-arr">→</div></div>
+        <div class="pc" style="background:#2a2a3a"><div class="pc-eye">Earn a cash bonus</div><div class="pc-head">Refer a friend</div><div class="pc-arr">→</div></div>
+        <div class="pc" style="background:#3467a1"><div class="pc-eye">Compare products and rates</div><div class="pc-head">Our savings options</div><div class="pc-arr">→</div></div>
+        <div class="pc" style="background:#2c5f3e"><div class="pc-eye">Ready to save?</div><div class="pc-head">Open an account now</div><div class="pc-arr">→</div></div>
+        <div style="width:20px;flex-shrink:0"></div>
+      </div>
+    </div>
+    <div class="legal">
+      <p>Marcus by Goldman Sachs® is a brand of Goldman Sachs Bank USA. All deposit products are provided or issued by Goldman Sachs Bank USA, Salt Lake City Branch. Member FDIC.</p>
+      <p>Important information about procedures for opening a new account: To help the government fight the funding of terrorism and money laundering activities, federal law requires all financial institutions to obtain, verify, and record information that identifies each person who opens an account.</p>
+      <p>© 2026 The Goldman Sachs Group, Inc. All rights reserved.</p>
+    </div>
+  </div>
+  <div class="tabbar">
+    <div class="tab active" onclick="switchTab('accounts')"><svg width="23" height="23" stroke="var(--green)"><use href="#ic-home-filled"/></svg><div class="tab-lbl" style="color:var(--green)">Accounts</div></div>
+    <div class="tab" onclick="switchTab('transfer')"><svg width="23" height="23" stroke="var(--muted)"><use href="#ic-swap"/></svg><div class="tab-lbl">Transfer/Pay</div></div>
+    <div class="tab" onclick="switchTab('help')"><svg width="23" height="23" stroke="var(--muted)" color="var(--muted)"><use href="#ic-help"/></svg><div class="tab-lbl">Help</div></div>
+    <div class="tab" onclick="switchTab('profile')"><svg width="23" height="23" stroke="var(--muted)"><use href="#ic-person"/></svg><div class="tab-lbl">Profile</div></div>
+  </div>
+</div>
+
+<!-- ══ SAVINGS DETAIL ══ -->
+<div class="screen" id="s-savings">
+  <div class="det-topbar">
+    <div class="det-back" onclick="closeSavings()">‹</div>
+    <div class="det-title-txt">Savings</div>
+    <div style="width:44px"></div>
+  </div>
+  <div class="scroll" style="background:#f0f2f7;">
+    <div class="det-card">
+      <div class="det-dots">···</div>
+      <div class="det-acct">Online Savings – 0090
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="var(--blue)" stroke-width="1.3" stroke-linecap="round"><path d="M2 10l1.5-.5 7-7a1.4 1.4 0 0 0-2-2l-7 7L2 10z"/></svg>
+      </div>
+      <div class="det-bal" id="detAmt" onclick="startEdit()">$120,507.32</div>
+      <div class="det-edit" id="detEdit">
+        <span style="font-size:30px;color:var(--green);">$</span>
+        <input class="det-input" id="detInput" type="text" inputmode="decimal" placeholder="0.00"/>
+        <button class="det-done" onclick="saveEdit()">Done</button>
+      </div>
+      <div class="det-bal-lbl">Current balance</div>
+      <div class="det-row"><div class="det-rl">Annual Percentage Yield <span class="info-i">i</span></div><div class="det-rv">3.00%</div></div>
+      <div class="det-row"><div class="det-rl">Earnings YTD</div><div class="det-rv">$593.32</div></div>
+      <div class="det-row"><div class="det-rl">Available to use <span class="info-i">i</span></div><div class="det-rv" id="availAmt">$120,007.32</div></div>
+      <div class="det-row"><div class="det-rl">Account &amp; routing numbers <span class="info-i">i</span></div><div class="det-rv link">View</div></div>
+      <button class="see-more">See more ∨</button>
+    </div>
+    <div class="fdic"><div class="fdic-logo">FDIC</div><div class="fdic-txt">FDIC-Insured – Backed by the full faith and credit of the U.S. Government. Goldman Sachs Bank USA, Salt Lake City Branch.</div></div>
+    <div class="txn-title">Transactions</div>
+
+    <div class="txn-date">May 31, 2026</div>
+    <div class="txn-row">
+      <div class="txn-m">M:</div>
+      <div class="txn-desc">Interest Paid</div>
+      <div class="txn-right"><div class="txn-pos">+$296.84</div><div class="txn-sub">$120,657.32</div></div>
+    </div>
+    <div class="txn-row">
+      <div class="txn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--muted)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h12M2 11h12"/><path d="M5 2L2 5l3 3"/><path d="M11 8l3 3-3 3"/></svg></div>
+      <div class="txn-desc" style="font-size:12px;">Internet transfer to JPMORGAN CHASE BANK, NA DDA account ****************6811</div>
+      <div class="txn-right"><div class="txn-neg">-$150.00</div><div class="txn-sub">$120,507.32</div></div>
+    </div>
+
+    <div class="txn-date">April 30, 2026</div>
+    <div class="txn-row">
+      <div class="txn-m">M:</div>
+      <div class="txn-desc">Interest Paid</div>
+      <div class="txn-right"><div class="txn-pos">+$296.48</div><div class="txn-sub">$120,510.48</div></div>
+    </div>
+    <div class="txn-row">
+      <div class="txn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--muted)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h12M2 11h12"/><path d="M5 2L2 5l3 3"/><path d="M11 8l3 3-3 3"/></svg></div>
+      <div class="txn-desc" style="font-size:12px;">Internet transfer to JPMORGAN CHASE BANK, NA DDA account ****************6811</div>
+      <div class="txn-right"><div class="txn-neg">-$150.00</div><div class="txn-sub">$120,360.48</div></div>
+    </div>
+
+    <div style="height:16px;"></div>
+  </div>
+  <div class="xfr-wrap"><button class="xfr-btn">Make a transfer</button></div>
+</div>
+
+<!-- ══ TRANSFER ══ -->
+<div class="screen" id="s-transfer">
+  <div class="scroll">
+    <div class="tab-header"><div class="tab-h-title">Move your money<br>with ease</div></div>
+    <div class="fdic"><div class="fdic-logo">FDIC</div><div class="fdic-txt">FDIC-Insured – Backed by the full faith and credit of the U.S. Government. Goldman Sachs Bank USA, Salt Lake City Branch.</div></div>
+    <div class="menu-list">
+      <div class="menu-item">
+        <div class="menu-icon-wrap"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="var(--navy)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8h18M2 14h18"/><path d="M6 5L3 8l3 3"/><path d="M16 11l3 3-3 3"/></svg></div>
+        <div><div class="menu-label">Make a transfer</div><div class="menu-sub">Move money to/from savings</div></div>
+        <svg class="chev" width="8" height="14" stroke="var(--muted)"><use href="#ic-chev"/></svg>
+      </div>
+      <div class="menu-item">
+        <div class="menu-icon-wrap"><svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="var(--navy)" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="5" width="18" height="14" rx="1.5"/><path d="M2 9h18"/><path d="M6 2v3M16 2v3"/></svg></div>
+        <div><div class="menu-label">Wire money</div><div class="menu-sub">Fastest transfer option. External bank may charge a fee.</div></div>
+        <svg class="chev" width="8" height="14" stroke="var(--muted)"><use href="#ic-chev"/></svg>
+      </div>
+    </div>
+  </div>
+  <div class="tabbar">
+    <div class="tab" onclick="switchTab('accounts')"><svg width="23" height="23" stroke="var(--muted)"><use href="#ic-home"/></svg><div class="tab-lbl">Accounts</div></div>
+    <div class="tab active" onclick="switchTab('transfer')"><svg width="23" height="23" stroke="var(--green)"><use href="#ic-swap"/></svg><div class="tab-lbl" style="color:var(--green)">Transfer/Pay</div></div>
+    <div class="tab" onclick="switchTab('help')"><svg width="23" height="23" stroke="var(--muted)" color="var(--muted)"><use href="#ic-help"/></svg><div class="tab-lbl">Help</div></div>
+    <div class="tab" onclick="switchTab('profile')"><svg width="23" height="23" stroke="var(--muted)"><use href="#ic-person"/></svg><div class="tab-lbl">Profile</div></div>
+  </div>
+</div>
+
+<!-- ══ HELP ══ -->
+<div class="screen" id="s-help">
+  <div class="scroll">
+    <div class="tab-header"><div class="tab-h-title">How can we help<br>you today?</div></div>
+    <div class="section-lbl">Popular Topics</div>
+    <div class="card-list">
+      <div class="card-item"><div class="card-item-lbl">Security at Marcus</div><svg width="8" height="14" stroke="var(--muted)"><use href="#ic-chev"/></svg></div>
+      <div class="card-item"><div class="card-item-lbl">Deposits &amp; Withdrawals</div><svg width="8" height="14" stroke="var(--muted)"><use href="#ic-chev"/></svg></div>
+      <div class="card-item"><div class="card-item-lbl">About Deposit Accounts</div><svg width="8" height="14" stroke="var(--muted)"><use href="#ic-chev"/></svg></div>
+      <div class="card-item"><div class="card-item-lbl">Marcus Referred</div><svg width="8" height="14" stroke="var(--muted)"><use href="#ic-chev"/></svg></div>
+      <div class="card-item"><div class="card-item-lbl">Beneficiaries</div><svg width="8" height="14" stroke="var(--muted)"><use href="#ic-chev"/></svg></div>
+    </div>
+    <div class="faq-btn-wrap"><button class="faq-btn">See all FAQs</button></div>
+    <div class="section-lbl">Chat with us</div>
+    <div class="card-list">
+      <div class="card-item"><div class="dot-online"></div><div style="flex:1"><div style="font-size:14.5px;color:var(--text)">Chat now</div><div style="font-size:11.5px;color:var(--muted);margin-top:2px">Our Savings support team is online</div></div><svg width="8" height="14" stroke="var(--muted)"><use href="#ic-chev"/></svg></div>
+    </div>
+    <div class="section-lbl">We're here to help</div>
+    <div class="card-list">
+      <div class="card-item">
+        <div style="margin-right:14px;"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--navy)" stroke-width="1.4" stroke-linecap="round"><path d="M15 13.5l-2.3 2.3c-2.9-1.8-5.3-4.2-7-7L8 6.5 6.2 2.5 3 2a1 1 0 0 0-1 1v.5C2 11.6 8.4 18 16.5 18h.5a1 1 0 0 0 1-1v-3l-4-1.5z"/></svg></div>
+        <div class="card-item-lbl">Contact Us</div>
+        <svg width="8" height="14" stroke="var(--muted)"><use href="#ic-chev"/></svg>
+      </div>
+    </div>
+    <div style="height:20px;"></div>
+  </div>
+  <div class="tabbar">
+    <div class="tab" onclick="switchTab('accounts')"><svg width="23" height="23" stroke="var(--muted)"><use href="#ic-home"/></svg><div class="tab-lbl">Accounts</div></div>
+    <div class="tab" onclick="switchTab('transfer')"><svg width="23" height="23" stroke="var(--muted)"><use href="#ic-swap"/></svg><div class="tab-lbl">Transfer/Pay</div></div>
+    <div class="tab active" onclick="switchTab('help')"><svg width="23" height="23" stroke="var(--green)" color="var(--green)"><use href="#ic-help"/></svg><div class="tab-lbl" style="color:var(--green)">Help</div></div>
+    <div class="tab" onclick="switchTab('profile')"><svg width="23" height="23" stroke="var(--muted)"><use href="#ic-person"/></svg><div class="tab-lbl">Profile</div></div>
+  </div>
+</div>
+
+<!-- ══ PROFILE ══ -->
+<div class="screen" id="s-profile">
+  <div class="scroll">
+    <div class="prof-topbar">
+      <div class="logout-btn">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="var(--text)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h4"/><path d="M12 13l4-4-4-4"/><path d="M16 9H7"/></svg>
+        Log out
+      </div>
+    </div>
+    <div class="prof-card">
+      <div class="prof-name">Miras Rziyev</div>
+      <div class="prof-email">mirasrziyev@gmail.com</div>
+      <button class="contact-btn">Contact info</button>
+    </div>
+    <div class="refer-banner">
+      <div><div class="refer-eye">Marcus Referred</div><div class="refer-head">Invite a friend to Marcus: Earn a bonus</div></div>
+      <svg width="70" height="50" viewBox="0 0 70 50" fill="none" opacity=".3"><circle cx="22" cy="16" r="10" fill="white"/><circle cx="48" cy="16" r="10" fill="white"/><ellipse cx="22" cy="38" rx="14" ry="10" fill="white"/><ellipse cx="48" cy="38" rx="14" ry="10" fill="white"/></svg>
+    </div>
+    <div class="fdic"><div class="fdic-logo">FDIC</div><div class="fdic-txt">FDIC-Insured – Backed by the full faith and credit of the U.S. Government. Goldman Sachs Bank USA, Salt Lake City Branch.</div></div>
+    <div class="menu-list">
+      <div class="menu-item"><div class="menu-icon-wrap"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--navy)" stroke-width="1.4" stroke-linecap="round"><rect x="6" y="1" width="8" height="10" rx="1.5"/><path d="M3 8v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/></svg></div><div class="menu-label">Security &amp; login</div><svg class="chev" width="8" height="14" stroke="var(--muted)"><use href="#ic-chev"/></svg></div>
+      <div class="menu-item"><div class="menu-icon-wrap"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--navy)" stroke-width="1.4" stroke-linecap="round"><path d="M3 16l3-1 10-10a2 2 0 0 0-3-3L3 12l-1 4z"/></svg></div><div class="menu-label">Give feedback</div><svg class="chev" width="8" height="14" stroke="var(--muted)"><use href="#ic-chev"/></svg></div>
+      <div class="menu-item"><div class="menu-icon-wrap"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--navy)" stroke-width="1.4" stroke-linecap="round"><circle cx="10" cy="10" r="8"/><path d="M10 6v5"/><circle cx="10" cy="14.5" r=".7" fill="var(--navy)" stroke="none"/></svg></div><div class="menu-label">Alerts</div><svg class="chev" width="8" height="14" stroke="var(--muted)"><use href="#ic-chev"/></svg></div>
+      <div class="menu-item"><div class="menu-icon-wrap"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--navy)" stroke-width="1.4" stroke-linecap="round"><rect x="3" y="2" width="14" height="16" rx="1.5"/><path d="M7 7h6M7 11h6M7 15h4"/></svg></div><div class="menu-label">Documents</div><svg class="chev" width="8" height="14" stroke="var(--muted)"><use href="#ic-chev"/></svg></div>
+      <div class="menu-item"><div class="menu-icon-wrap"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--navy)" stroke-width="1.4" stroke-linecap="round"><path d="M10 7a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/><path d="M10 2a8 8 0 1 0 0 16A8 8 0 0 0 10 2z" stroke-dasharray="2 2"/></svg></div><div class="menu-label">Linked external accounts</div><svg class="chev" width="8" height="14" stroke="var(--muted)"><use href="#ic-chev"/></svg></div>
+      <div class="menu-item"><div class="menu-icon-wrap"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--navy)" stroke-width="1.4" stroke-linecap="round"><circle cx="8" cy="7" r="3"/><path d="M2 17c0-3 2.7-5 6-5"/><path d="M14 11v6M11 14h6"/></svg></div><div class="menu-label">Beneficiaries</div><svg class="chev" width="8" height="14" stroke="var(--muted)"><use href="#ic-chev"/></svg></div>
+      <div class="menu-item"><div class="menu-icon-wrap"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--navy)" stroke-width="1.4" stroke-linecap="round"><circle cx="10" cy="10" r="8"/><path d="M10 6v4M10 14v.5"/></svg></div><div class="menu-label">Privacy &amp; legal</div><svg class="chev" width="8" height="14" stroke="var(--muted)"><use href="#ic-chev"/></svg></div>
+      <div class="menu-item" style="border-bottom:none"><div class="menu-icon-wrap"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="var(--navy)" stroke-width="1.4" stroke-linecap="round"><circle cx="10" cy="10" r="8"/><path d="M7 10h6M10 7l3 3-3 3"/></svg></div><div class="menu-label">Account closure options</div><svg class="chev" width="8" height="14" stroke="var(--muted)"><use href="#ic-chev"/></svg></div>
+    </div>
+    <div class="footer"><div class="footer-txt">Find us at marcus.com</div><div class="app-ver">Application version 2.21.0</div></div>
+  </div>
+  <div class="tabbar">
+    <div class="tab" onclick="switchTab('accounts')"><svg width="23" height="23" stroke="var(--muted)"><use href="#ic-home"/></svg><div class="tab-lbl">Accounts</div></div>
+    <div class="tab" onclick="switchTab('transfer')"><svg width="23" height="23" stroke="var(--muted)"><use href="#ic-swap"/></svg><div class="tab-lbl">Transfer/Pay</div></div>
+    <div class="tab" onclick="switchTab('help')"><svg width="23" height="23" stroke="var(--muted)" color="var(--muted)"><use href="#ic-help"/></svg><div class="tab-lbl">Help</div></div>
+    <div class="tab active" onclick="switchTab('profile')"><svg width="23" height="23" stroke="var(--green)" color="var(--green)"><use href="#ic-person"/></svg><div class="tab-lbl" style="color:var(--green)">Profile</div></div>
+  </div>
+</div>
+
+</div>
+<script>
+  const screens=['accounts','transfer','help','profile'];
+  function switchTab(t){screens.forEach(id=>{const s=document.getElementById('s-'+id);if(s)s.classList.toggle('on',id===t);});}
+  function openSavings(){screens.forEach(id=>{const s=document.getElementById('s-'+id);if(s)s.classList.remove('on');});document.getElementById('s-savings').classList.add('on');document.getElementById('detAmt').textContent=document.getElementById('homeAmt').textContent;}
+  function closeSavings(){document.getElementById('s-savings').classList.remove('on');document.getElementById('s-accounts').classList.add('on');}
+  function fmt(raw){const n=parseFloat(raw.replace(/[^0-9.]/g,''));if(isNaN(n))return '$0.00';return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+  function startEdit(){const d=document.getElementById('detAmt'),e=document.getElementById('detEdit'),i=document.getElementById('detInput');d.classList.add('hide');e.classList.add('on');i.value=d.textContent.replace(/[$,]/g,'');setTimeout(()=>i.focus(),50);}
+  function saveEdit(){const d=document.getElementById('detAmt'),e=document.getElementById('detEdit'),i=document.getElementById('detInput');const f=fmt(i.value);d.textContent=f;d.classList.remove('hide');e.classList.remove('on');document.getElementById('homeAmt').textContent=f;const n=parseFloat(i.value.replace(/[^0-9.]/g,''));if(!isNaN(n))document.getElementById('availAmt').textContent='$'+(n-500).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+  document.getElementById('detInput').addEventListener('keydown',e=>{if(e.key==='Enter')saveEdit();});
+</script>
+</body>
+</html>
